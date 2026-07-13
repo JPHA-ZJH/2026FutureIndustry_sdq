@@ -1,0 +1,401 @@
+# -*- coding: utf-8 -*-
+"""
+Quantum patent matcher v2
+- Distinguishes core, conditional, supply_chain, negative terms.
+- Generic optics/materials/application terms do not create quantum patents alone.
+- Designed for Chinese patent title/abstract/claims DataFrame.
+"""
+
+import re
+import time
+from collections import defaultdict, Counter
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+
+
+# ---------------------------------------------------------------------
+# 1. Keyword rules
+# ---------------------------------------------------------------------
+# match_type:
+#   core          : strong quantum term; can support relevance alone
+#   conditional   : valid only when strong core context co-occurs
+#   supply_chain  : used to identify upstream position only after core context exists
+#   application   : application term; valid only with core context
+#   negative      : ambiguous/exclusion term; used for penalty / review
+
+QUANTUM_RULES: List[Dict] = [
+    # ---- core: general and computing ----
+    {"category": "量子基础概念", "sub_category": "总称", "terms_cn": ["量子技术", "量子科技", "量子信息", "量子信息技术"], "terms_en": ["quantum technology", "quantum technologies", "quantum information"], "score": 5, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子计算", "sub_category": "计算系统", "terms_cn": ["量子计算", "量子计算机", "量子处理器", "量子芯片", "量子计算平台"], "terms_en": ["quantum computing", "quantum computer", "quantum processor", "quantum chip", "quantum computing platform"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子计算", "sub_category": "量子比特", "terms_cn": ["量子比特", "物理量子比特", "逻辑量子比特"], "terms_en": ["qubit", "qubits", "physical qubit", "logical qubit"], "score": 5, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子计算", "sub_category": "量子门与线路", "terms_cn": ["量子门", "量子线路", "量子电路", "门保真度", "量子门保真度"], "terms_en": ["quantum gate", "quantum gates", "quantum circuit", "quantum circuits", "gate fidelity", "quantum gate fidelity"], "score": 5, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子计算", "sub_category": "纠错与容错", "terms_cn": ["量子纠错", "量子误差校正", "量子错误校正", "容错量子计算", "可纠错量子计算"], "terms_en": ["quantum error correction", "fault-tolerant quantum computing", "error-corrected quantum computation"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子计算", "sub_category": "量子模拟", "terms_cn": ["量子模拟", "量子仿真", "量子模拟器"], "terms_en": ["quantum simulation", "quantum simulator"], "score": 5, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子计算", "sub_category": "算法", "terms_cn": ["Shor算法", "肖尔算法", "量子算法", "量子并行"], "terms_en": ["Shor's algorithm", "Shor algorithm", "quantum algorithm", "quantum algorithms", "quantum parallelism"], "score": 4, "match_type": "core", "source_type": "PDF直接词"},
+
+    # ---- core: hardware routes ----
+    {"category": "量子计算硬件", "sub_category": "离子阱", "terms_cn": ["离子阱", "俘获离子", "囚禁离子"], "terms_en": ["trapped ion", "trapped ions", "ion trap", "ion traps"], "score": 5, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子计算硬件", "sub_category": "超导", "terms_cn": ["超导量子比特", "超导量子电路", "超导量子芯片"], "terms_en": ["superconducting qubit", "superconducting qubits"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子计算硬件", "sub_category": "中性原子", "terms_cn": ["中性原子量子", "冷原子量子", "里德堡原子量子", "原子阵列量子"], "terms_en": ["neutral atom quantum", "Rydberg atom quantum", "atomic array quantum"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子计算硬件", "sub_category": "硅自旋", "terms_cn": ["硅自旋量子比特", "自旋量子比特", "硅基量子比特"], "terms_en": ["silicon spin qubit", "spin qubit", "spin qubits"], "score": 4, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子计算硬件", "sub_category": "光量子", "terms_cn": ["光量子比特", "光子量子比特", "光量子计算", "光子量子计算"], "terms_en": ["photonic qubit", "photonic qubits", "photonic quantum computing"], "score": 4, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子计算硬件", "sub_category": "拓扑", "terms_cn": ["拓扑量子比特", "拓扑量子计算"], "terms_en": ["topological qubit", "topological qubits", "topological quantum computing"], "score": 4, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+
+    # ---- core: communication/security ----
+    {"category": "量子通信与安全", "sub_category": "量子通信", "terms_cn": ["量子通信", "量子安全通信", "量子保密通信"], "terms_en": ["quantum communication", "quantum communications", "quantum-secure communication"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子通信与安全", "sub_category": "QKD", "terms_cn": ["量子密钥分发", "量子密钥分配", "量子密钥"], "terms_en": ["quantum key distribution", "QKD"], "score": 5, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子通信与安全", "sub_category": "量子网络", "terms_cn": ["量子网络", "量子互联网", "量子中继", "量子中继器", "量子转导", "分布式量子计算"], "terms_en": ["quantum network", "quantum networking", "quantum internet", "quantum repeater", "quantum repeaters", "quantum transduction", "distributed quantum computing"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子通信与安全", "sub_category": "后量子密码", "terms_cn": ["后量子密码", "后量子加密", "抗量子密码", "抗量子加密", "抗量子攻击"], "terms_en": ["post-quantum cryptography", "post-quantum encryption", "quantum-resistant cryptography", "quantum-resistant encryption"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+
+    # ---- core: sensing ----
+    {"category": "量子传感", "sub_category": "总称", "terms_cn": ["量子传感", "量子传感器", "量子测量", "量子精密测量", "量子磁力计"], "terms_en": ["quantum sensing", "quantum sensor", "quantum sensors", "quantum measurement", "quantum metrology", "quantum magnetometer"], "score": 5, "match_type": "core", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子传感", "sub_category": "NV色心", "terms_cn": ["金刚石NV色心", "NV色心"], "terms_en": ["NV center", "nitrogen-vacancy center"], "score": 5, "match_type": "core", "source_type": "专家补充词"},
+    {"category": "量子传感", "sub_category": "冷原子干涉", "terms_cn": ["冷原子干涉仪", "原子干涉仪"], "terms_en": ["cold-atom interferometer", "cold atom interferometer", "atom interferometer"], "score": 5, "match_type": "core", "source_type": "专家补充词"},
+
+    # ---- conditional: bare scientific words ----
+    {"category": "量子基础概念", "sub_category": "基本原理", "terms_cn": ["量子叠加", "叠加态", "量子纠缠", "量子态", "量子相干"], "terms_en": ["quantum superposition", "quantum entanglement", "quantum state", "quantum coherence"], "score": 4, "match_type": "core", "source_type": "PDF直接词"},
+    {"category": "量子基础概念", "sub_category": "需共现基本原理", "terms_cn": [], "terms_en": ["superposition", "entanglement"], "score": 2, "match_type": "conditional", "source_type": "PDF直接词", "note": "bare English word is too broad; requires strong quantum context"},
+    {"category": "量子计算", "sub_category": "需共现保真度", "terms_cn": ["保真度"], "terms_en": ["fidelity"], "score": 2, "match_type": "conditional", "source_type": "PDF直接词", "note": "only valid with qubit/quantum gate/quantum circuit context"},
+    {"category": "量子传感", "sub_category": "原子钟", "terms_cn": ["原子钟", "光钟", "便携式原子钟", "量子钟"], "terms_en": ["atomic clock", "atomic clocks", "optical clock"], "score": 2, "match_type": "conditional", "source_type": "PDF直接词/PDF支持扩展"},
+
+    # ---- supply chain: do not identify quantum alone ----
+    {"category": "上游材料与核心部件", "sub_category": "低温与真空", "terms_cn": ["稀释制冷机", "低温制冷机", "低温恒温器", "超高真空"], "terms_en": ["dilution refrigerator", "cryogenic refrigerator", "cryostat", "ultra-high vacuum"], "score": 3, "match_type": "supply_chain", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "上游材料与核心部件", "sub_category": "光电器件", "terms_cn": ["单光子探测器", "集成量子光子", "集成量子光子学", "微波-光学转导", "微波光学转导"], "terms_en": ["single photon detector", "single-photon detector", "integrated quantum photonics", "microwave-to-optical transduction", "microwave optical transduction"], "score": 3, "match_type": "supply_chain", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "上游材料与核心部件", "sub_category": "泛光电器件", "terms_cn": ["激光器", "光调制器", "电光晶体", "声光晶体"], "terms_en": ["laser", "lasers", "optical modulator", "optical modulators", "electro-optic crystal", "acousto-optic crystal"], "score": 1, "match_type": "supply_chain", "source_type": "PDF直接词/PDF支持扩展", "note": "very broad; only records supply-chain evidence when core quantum context exists"},
+    {"category": "上游材料与核心部件", "sub_category": "关键材料", "terms_cn": ["高纯铝", "稀土金属"], "terms_en": ["high purity aluminum", "rare earth metals"], "score": 1, "match_type": "supply_chain", "source_type": "PDF直接词"},
+
+    # ---- applications: valid only with core quantum context ----
+    {"category": "量子应用", "sub_category": "密码与安全", "terms_cn": ["公钥加密破解", "非对称密码", "大数分解", "RSA破解", "RSA-2048"], "terms_en": ["public-key encryption", "asymmetric cryptography", "factoring large numbers", "RSA-2048"], "score": 2, "match_type": "application", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子应用", "sub_category": "材料与化学", "terms_cn": ["量子化学", "材料模拟", "新材料设计", "高温超导", "催化剂设计"], "terms_en": ["quantum chemistry", "materials simulation", "materials design", "high-temperature superconductivity", "catalyst design"], "score": 2, "match_type": "application", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子应用", "sub_category": "医药与生命科学", "terms_cn": ["药物发现", "蛋白质相互作用", "溶剂相互作用"], "terms_en": ["drug discovery", "protein interactions", "solvent interactions"], "score": 1, "match_type": "application", "source_type": "PDF直接词/PDF支持扩展"},
+    {"category": "量子应用", "sub_category": "金融与机器学习", "terms_cn": ["量子机器学习", "量子优化", "投资组合优化", "金融组合优化"], "terms_en": ["quantum machine learning", "quantum optimization", "portfolio optimization", "financial portfolio optimization"], "score": 1, "match_type": "application", "source_type": "PDF直接词/PDF支持扩展"},
+]
+
+NEGATIVE_RULES: List[Dict] = [
+    {"category": "易混淆材料词", "terms_cn": ["量子点", "量子点发光", "量子点显示", "量子点膜"], "terms_en": ["quantum dot", "quantum dots", "quantum dot display"], "penalty": 4},
+    {"category": "易混淆半导体词", "terms_cn": ["量子阱", "多量子阱", "量子线"], "terms_en": ["quantum well", "quantum wells", "multiple quantum well", "quantum wire"], "penalty": 4},
+    {"category": "易混淆光电指标", "terms_cn": ["量子效率", "外量子效率", "内量子效率", "量子产率"], "terms_en": ["quantum efficiency", "external quantum efficiency", "internal quantum efficiency", "quantum yield"], "penalty": 4},
+    {"category": "英文修辞排除", "terms_cn": [], "terms_en": ["quantum leap"], "penalty": 8},
+]
+
+STRONG_CONTEXT_TERMS_CN = [
+    "量子技术", "量子科技", "量子信息", "量子计算", "量子计算机", "量子处理器", "量子芯片", "量子比特",
+    "量子门", "量子线路", "量子电路", "量子纠错", "量子模拟", "量子仿真", "量子算法",
+    "量子通信", "量子密钥", "量子网络", "量子互联网", "量子中继", "量子转导", "后量子", "抗量子",
+    "量子传感", "量子测量", "量子精密测量", "量子磁力计", "金刚石NV色心", "NV色心",
+    "离子阱", "俘获离子", "囚禁离子", "超导量子", "光量子", "光子量子", "拓扑量子",
+]
+STRONG_CONTEXT_TERMS_EN = [
+    "quantum technology", "quantum information", "quantum computing", "quantum computer", "quantum processor",
+    "quantum chip", "qubit", "quantum gate", "quantum circuit", "quantum error correction", "quantum simulation",
+    "quantum algorithm", "quantum communication", "quantum key", "QKD", "quantum network", "quantum internet",
+    "quantum repeater", "quantum transduction", "post-quantum", "quantum-resistant", "quantum sensing", "quantum sensor",
+    "quantum measurement", "quantum metrology", "NV center", "nitrogen-vacancy center", "trapped ion", "ion trap",
+    "superconducting qubit", "photonic qubit", "topological qubit",
+]
+
+
+# ---------------------------------------------------------------------
+# 2. Regex helpers
+# ---------------------------------------------------------------------
+def safe_text(x) -> str:
+    if pd.isna(x):
+        return ""
+    return str(x)
+
+
+def normalize_text(text: str) -> str:
+    text = safe_text(text).lower()
+    text = text.replace("－", "-").replace("—", "-").replace("–", "-")
+    text = text.replace("（", "(").replace("）", ")")
+    text = text.replace("，", ",").replace("；", ";")
+    return text
+
+
+def term_to_regex(term: str) -> Optional[str]:
+    term = term.strip()
+    if not term:
+        return None
+    has_cn = bool(re.search(r"[\u4e00-\u9fff]", term))
+    if has_cn:
+        return re.escape(term.lower())
+    t = re.escape(term.lower())
+    t = t.replace(r"\ ", r"[\s\-]+")
+    t = t.replace(r"\-", r"[\s\-]+")
+    return r"(?<![a-z0-9])" + t + r"(?![a-z0-9])"
+
+
+def compile_terms(terms: List[str]) -> List[Tuple[str, re.Pattern]]:
+    out = []
+    for term in terms:
+        rgx = term_to_regex(term)
+        if rgx:
+            out.append((term, re.compile(rgx, flags=re.IGNORECASE)))
+    return out
+
+
+def compile_rules(rules: List[Dict]) -> List[Dict]:
+    compiled = []
+    for item in rules:
+        new = item.copy()
+        new["patterns"] = compile_terms(item.get("terms_cn", []) + item.get("terms_en", []))
+        compiled.append(new)
+    return compiled
+
+
+COMPILED_RULES = compile_rules(QUANTUM_RULES)
+COMPILED_NEGATIVE = compile_rules(NEGATIVE_RULES)
+CONTEXT_PATTERNS = compile_terms(STRONG_CONTEXT_TERMS_CN + STRONG_CONTEXT_TERMS_EN)
+COARSE_REGEX = re.compile("|".join([p.pattern for _, p in CONTEXT_PATTERNS]), flags=re.IGNORECASE)
+
+
+def has_strong_context(text: str) -> bool:
+    return any(p.search(text) for _, p in CONTEXT_PATTERNS)
+
+
+def build_patent_text(row: pd.Series, cn_abs_col="摘要 (中文)", en_abs_col="摘要 (英文)", extra_cols=None) -> str:
+    parts = [safe_text(row.get(cn_abs_col, "")), safe_text(row.get(en_abs_col, ""))]
+    if extra_cols:
+        for c in extra_cols:
+            parts.append(safe_text(row.get(c, "")))
+    return normalize_text(" ".join(parts))
+
+
+# ---------------------------------------------------------------------
+# 3. Scoring
+# ---------------------------------------------------------------------
+def infer_chain_position(category_scores: Dict[str, int], subcategory_scores: Dict[Tuple[str, str], int], matched_core_terms: List[str]) -> str:
+    cats = {c for c, s in category_scores.items() if s > 0}
+    subcats = {sub for (cat, sub), s in subcategory_scores.items() if s > 0}
+
+    # prioritize actual quantum application categories over generic supply-chain evidence
+    if "量子通信与安全" in cats:
+        return "量子通信与安全"
+    if "量子传感" in cats:
+        return "量子传感器/精密测量"
+    if any(s in subcats for s in ["离子阱", "超导", "中性原子", "硅自旋", "光量子", "拓扑"]):
+        return "量子计算硬件/量子芯片"
+    if any(s in subcats for s in ["纠错与容错", "算法", "量子模拟"]):
+        return "量子软件/算法/模拟"
+    if "量子计算" in cats:
+        return "量子计算系统"
+    if "量子应用" in cats:
+        return "量子应用场景"
+    if "上游材料与核心部件" in cats and matched_core_terms:
+        return "上游材料与核心部件"
+    return "其他量子相关/待复核"
+
+
+def score_one_patent_text(text: str) -> Dict:
+    text = normalize_text(text)
+    strong_context = has_strong_context(text)
+
+    matched_core_terms, matched_conditional_terms, matched_supply_terms, matched_application_terms = [], [], [], []
+    inactive_terms, negative_terms = [], []
+    category_scores = defaultdict(int)
+    subcategory_scores = defaultdict(int)
+    source_types = set()
+    penalty = 0
+
+    for item in COMPILED_RULES:
+        hits = [term for term, pattern in item["patterns"] if pattern.search(text)]
+        if not hits:
+            continue
+        mt = item.get("match_type", "core")
+        valid = (mt == "core") or (mt in {"conditional", "supply_chain", "application"} and strong_context)
+
+        if not valid:
+            inactive_terms.extend(hits)
+            continue
+
+        score = item.get("score", 0)
+        category = item.get("category", "")
+        sub_category = item.get("sub_category", "")
+        category_scores[category] += score
+        subcategory_scores[(category, sub_category)] += score
+        source_types.add(item.get("source_type", ""))
+
+        if mt == "core":
+            matched_core_terms.extend(hits)
+        elif mt == "conditional":
+            matched_conditional_terms.extend(hits)
+        elif mt == "supply_chain":
+            matched_supply_terms.extend(hits)
+        elif mt == "application":
+            matched_application_terms.extend(hits)
+
+    for item in COMPILED_NEGATIVE:
+        hits = [term for term, pattern in item["patterns"] if pattern.search(text)]
+        if hits:
+            negative_terms.extend(hits)
+            penalty += item.get("penalty", 0)
+
+    core_score = sum(category_scores[c] for c in ["量子基础概念", "量子计算", "量子计算硬件", "量子通信与安全", "量子传感"])
+    total_score_raw = sum(category_scores.values())
+    total_score = max(0, total_score_raw - (penalty if not matched_core_terms else max(0, penalty - 2)))
+
+    if category_scores:
+        main_category = max(category_scores.items(), key=lambda x: x[1])[0]
+    else:
+        main_category = ""
+
+    chain_position = infer_chain_position(category_scores, subcategory_scores, matched_core_terms)
+
+    core_count = len(set(matched_core_terms))
+    if core_count >= 2 and total_score >= 8:
+        relevance = "高相关"
+    elif core_count >= 1 and total_score >= 5:
+        relevance = "中相关"
+    elif core_count >= 1:
+        relevance = "低相关/待复核"
+    elif matched_supply_terms or matched_application_terms or matched_conditional_terms:
+        relevance = "供应链/应用待复核"
+    elif negative_terms:
+        relevance = "不相关/易误判"
+    else:
+        relevance = "不相关"
+
+    all_terms = matched_core_terms + matched_conditional_terms + matched_supply_terms + matched_application_terms
+    return {
+        "quantum_score_raw": total_score_raw,
+        "quantum_score": total_score,
+        "core_score": core_score,
+        "matched_terms": "；".join(sorted(set(all_terms))),
+        "matched_core_terms": "；".join(sorted(set(matched_core_terms))),
+        "matched_conditional_terms": "；".join(sorted(set(matched_conditional_terms))),
+        "matched_supply_terms": "；".join(sorted(set(matched_supply_terms))),
+        "matched_application_terms": "；".join(sorted(set(matched_application_terms))),
+        "inactive_terms_no_context": "；".join(sorted(set(inactive_terms))),
+        "negative_terms": "；".join(sorted(set(negative_terms))),
+        "main_category": main_category,
+        "chain_position": chain_position,
+        "category_scores": dict(category_scores),
+        "source_types": "；".join(sorted(x for x in source_types if x)),
+        "relevance": relevance,
+    }
+
+
+# ---------------------------------------------------------------------
+# 4. DataFrame interface
+# ---------------------------------------------------------------------
+def make_text_series(df: pd.DataFrame, cn_abs_col="摘要 (中文)", en_abs_col="摘要 (英文)", extra_text_cols=None) -> pd.Series:
+    cols = [cn_abs_col, en_abs_col]
+    if extra_text_cols:
+        cols += extra_text_cols
+    existing = [c for c in cols if c in df.columns]
+    if not existing:
+        return pd.Series([""] * len(df), index=df.index)
+    return df[existing].fillna("").astype(str).agg(" ".join, axis=1).map(normalize_text)
+
+
+def tag_quantum_patents(
+    df: pd.DataFrame,
+    cn_abs_col="摘要 (中文)",
+    en_abs_col="摘要 (英文)",
+    firm_col="第一申请人",
+    year_col="year",
+    extra_text_cols=None,
+    split_firms=False,
+    firm_sep_regex=r"[;；,，、|/]+",
+    coarse_screen=True,
+    progress_every=10000,
+    include_review=False,
+):
+    """
+    Returns: patent_tagged, quantum_patents, firm_year_quantum, firm_quantum.
+    By default quantum_patents includes only high/medium/low core-related patents.
+    Set include_review=True to include supply-chain/application review cases.
+    """
+    data = df.copy()
+    text_series = make_text_series(data, cn_abs_col, en_abs_col, extra_text_cols)
+
+    if coarse_screen:
+        candidate_mask = text_series.str.contains(COARSE_REGEX, regex=True, na=False)
+        data = data.loc[candidate_mask].copy()
+        text_series = text_series.loc[candidate_mask]
+
+    total_n = len(data)
+    results = []
+    start = time.time()
+    for i, text in enumerate(text_series, start=1):
+        results.append(score_one_patent_text(text))
+        if progress_every and (i % progress_every == 0 or i == total_n):
+            elapsed = time.time() - start
+            speed = i / elapsed if elapsed > 0 else 0
+            remain = (total_n - i) / speed if speed > 0 else 0
+            print(f"已处理 {i:,}/{total_n:,} 条，占比 {i/total_n:.2%}，已用 {elapsed/60:.1f} 分钟，预计剩余 {remain/60:.1f} 分钟")
+
+    scores = pd.DataFrame(results, index=data.index)
+    patent_tagged = pd.concat([data, scores], axis=1)
+
+    relevant_labels = ["高相关", "中相关", "低相关/待复核"]
+    if include_review:
+        relevant_labels.append("供应链/应用待复核")
+    patent_tagged["is_quantum_patent"] = patent_tagged["relevance"].isin(relevant_labels).astype(int)
+
+    if split_firms and firm_col in patent_tagged.columns:
+        patent_tagged[firm_col] = patent_tagged[firm_col].fillna("").astype(str)
+        patent_tagged["_firm_list"] = patent_tagged[firm_col].str.split(firm_sep_regex)
+        patent_tagged = patent_tagged.explode("_firm_list")
+        patent_tagged[firm_col] = patent_tagged["_firm_list"].str.strip()
+        patent_tagged = patent_tagged[patent_tagged[firm_col] != ""].copy()
+        patent_tagged.drop(columns=["_firm_list"], inplace=True)
+
+    quantum_patents = patent_tagged[patent_tagged["is_quantum_patent"] == 1].copy()
+
+    if quantum_patents.empty or firm_col not in quantum_patents.columns:
+        return patent_tagged, quantum_patents, pd.DataFrame(), pd.DataFrame()
+
+    def join_unique(x):
+        vals = []
+        for s in x.dropna().astype(str):
+            vals.extend([v for v in s.split("；") if v])
+        return "；".join(sorted(set(vals)))
+
+    firm_year_quantum = quantum_patents.groupby([firm_col, year_col], dropna=False).agg(
+        quantum_patent_count=("is_quantum_patent", "sum"),
+        quantum_score_sum=("quantum_score", "sum"),
+        quantum_score_mean=("quantum_score", "mean"),
+        main_categories=("main_category", lambda x: "；".join(sorted(set(x.dropna())))),
+        chain_positions=("chain_position", lambda x: "；".join(sorted(set(x.dropna())))),
+        matched_terms=("matched_terms", join_unique),
+        high_related_count=("relevance", lambda x: (x == "高相关").sum()),
+        medium_related_count=("relevance", lambda x: (x == "中相关").sum()),
+        low_related_count=("relevance", lambda x: (x == "低相关/待复核").sum()),
+    ).reset_index()
+
+    firm_quantum = quantum_patents.groupby(firm_col, dropna=False).agg(
+        first_year=(year_col, "min"),
+        last_year=(year_col, "max"),
+        quantum_patent_count=("is_quantum_patent", "sum"),
+        quantum_score_sum=("quantum_score", "sum"),
+        quantum_score_mean=("quantum_score", "mean"),
+        main_categories=("main_category", lambda x: "；".join(sorted(set(x.dropna())))),
+        chain_positions=("chain_position", lambda x: "；".join(sorted(set(x.dropna())))),
+        matched_terms=("matched_terms", join_unique),
+        high_related_count=("relevance", lambda x: (x == "高相关").sum()),
+        medium_related_count=("relevance", lambda x: (x == "中相关").sum()),
+        low_related_count=("relevance", lambda x: (x == "低相关/待复核").sum()),
+    ).reset_index()
+
+    firm_main_position = quantum_patents.groupby(firm_col)["chain_position"].agg(lambda x: Counter([i for i in x if i]).most_common(1)[0][0]).reset_index().rename(columns={"chain_position": "main_chain_position"})
+    firm_main_category = quantum_patents.groupby(firm_col)["main_category"].agg(lambda x: Counter([i for i in x if i]).most_common(1)[0][0]).reset_index().rename(columns={"main_category": "main_quantum_category"})
+    firm_quantum = firm_quantum.merge(firm_main_position, on=firm_col, how="left").merge(firm_main_category, on=firm_col, how="left")
+
+    firm_quantum["firm_relevance"] = np.select(
+        [
+            (firm_quantum["high_related_count"] >= 2) | (firm_quantum["quantum_score_sum"] >= 20),
+            (firm_quantum["high_related_count"] >= 1) | (firm_quantum["quantum_score_sum"] >= 10),
+            (firm_quantum["medium_related_count"] >= 1) | (firm_quantum["quantum_patent_count"] >= 1),
+        ],
+        ["核心量子企业", "较高相关企业", "候选/待复核企业"],
+        default="不相关",
+    )
+
+    return patent_tagged, quantum_patents, firm_year_quantum, firm_quantum
+
+
+if __name__ == "__main__":
+    print("Import this module and call tag_quantum_patents(df, ...).")

@@ -1,0 +1,241 @@
+﻿period,keyword,tfidf_score,frequency,document_count,document_share
+2026-Q1,green hydrogen,1.189996,462,20,0.625
+2026-Q1,fuel cell,1.182487,418,19,0.59375
+2026-Q1,infrastructure,1.179507,545,27,0.84375
+2026-Q1,industrial,1.116059,584,28,0.875
+2026-Q1,production,0.956315,452,28,0.875
+2026-Q1,fuel cells,0.80988,286,17,0.53125
+2026-Q1,hydrogen fuel,0.809384,309,21,0.65625
+2026-Q1,aviation,0.763709,149,6,0.1875
+2026-Q1,hydrogen infrastructure,0.717731,269,21,0.65625
+2026-Q1,electrolysis,0.623788,221,15,0.46875
+2026-Q1,pipeline,0.601342,145,8,0.25
+2026-Q1,industrial decarbonization,0.601308,214,20,0.625
+2026-Q1,ammonia,0.596178,128,5,0.15625
+2026-Q1,fuel cell technology,0.59557,135,10,0.3125
+2026-Q1,hydrogen production,0.584708,200,20,0.625
+2026-Q1,hydrogen fuel cells,0.564742,181,14,0.4375
+2026-Q1,storage,0.529802,260,22,0.6875
+2026-Q1,electrolyzer,0.524878,196,14,0.4375
+2026-Q1,hydrogen fuel cell,0.467772,108,9,0.28125
+2026-Q1,refueling,0.437489,143,9,0.28125
+2026-Q1,geologic hydrogen,0.41929,119,2,0.0625
+2026-Q1,clean hydrogen,0.399858,82,6,0.1875
+2026-Q1,blue hydrogen,0.397741,82,4,0.125
+2026-Q1,transport,0.355483,110,14,0.4375
+2026-Q1,aircraft,0.348857,66,4,0.125
+2026-Q1,shipping,0.331097,99,10,0.3125
+2026-Q1,low carbon hydrogen,0.322773,77,3,0.09375
+2026-Q1,carbon hydrogen,0.307116,78,4,0.125
+2026-Q1,hydrogen powered,0.297252,70,7,0.21875
+2026-Q1,hydrogen hubs,0.277412,79,8,0.25
+2026-Q1,hydrogen economy,0.266117,61,5,0.15625
+2026-Q1,hydrogen sector,0.263207,69,4,0.125
+2026-Q1,green hydrogen production,0.242636,48,4,0.125
+2026-Q1,natural hydrogen,0.231276,29,2,0.0625
+2026-Q1,renewable hydrogen,0.226745,30,3,0.09375
+2026-Q1,ammonia production,0.223416,57,4,0.125
+2026-Q1,truck,0.22302,47,2,0.0625
+2026-Q1,hydrogen fuel cell technology,0.220223,26,4,0.125
+2026-Q1,aviation fuel,0.215728,27,3,0.09375
+2026-Q1,hydrogen hub,0.209187,23,2,0.0625
+2026-Q1,hydrogen supply,0.203479,35,4,0.125
+2026-Q1,global hydrogen,0.20071,43,3,0.09375
+2026-Q1,steel,0.189002,49,8,0.25
+2026-Q1,refuelling,0.186866,32,2,0.0625
+2026-Q1,refueling stations,0.186407,61,4,0.125
+2026-Q1,liquid,0.184957,44,5,0.15625
+2026-Q1,sustainable aviation,0.181593,30,3,0.09375
+2026-Q1,hydrogen core,0.173614,16,1,0.03125
+2026-Q1,aviation sector,0.17225,21,2,0.0625
+2026-Q1,hydrogen allocation,0.171369,31,2,0.0625
+2026-Q1,hydrogen allocation rounds,0.171369,31,2,0.0625
+2026-Q1,pipelines storage,0.168385,39,2,0.0625
+2026-Q1,electrolyser,0.163648,24,2,0.0625
+2026-Q1,pem fuel cell,0.163026,32,3,0.09375
+2026-Q1,industrial scale,0.162845,31,3,0.09375
+2026-Q1,industrial hubs,0.162264,32,4,0.125
+2026-Q1,hydrogen costs,0.160871,32,3,0.09375
+2026-Q1,scale hydrogen,0.157798,22,3,0.09375
+2026-Q1,hydrogen storage,0.156129,32,7,0.21875
+2026-Q1,hydrogen technologies,0.152749,25,2,0.0625
+2026-Q1,industrial demand,0.139441,28,2,0.0625
+2026-Q1,scaling hydrogen,0.137714,8,1,0.03125
+2026-Q1,sustainable aviation fuel,0.132447,8,1,0.03125
+2026-Q1,domestic hydrogen,0.130983,25,3,0.09375
+2026-Q1,infrastructure planning,0.127541,22,2,0.0625
+2026-Q1,fuel cell stacks,0.12715,22,4,0.125
+2026-Q1,adopt hydrogen,0.126419,26,2,0.0625
+2026-Q1,infrastructure upgrades,0.122817,33,2,0.0625
+2026-Q1,joint hydrogen,0.119682,11,1,0.03125
+2026-Q1,battery storage,0.119513,28,3,0.09375
+2026-Q1,mea production,0.118669,19,2,0.0625
+2026-Q1,scale production,0.117046,17,2,0.0625
+2026-Q1,gray hydrogen,0.11635,27,2,0.0625
+2026-Q1,steel mills,0.115258,24,5,0.15625
+2026-Q1,energy infrastructure,0.114955,24,2,0.0625
+2026-Q1,capacity green hydrogen,0.114196,9,1,0.03125
+2026-Q1,green hydrogen ambitions,0.113151,15,2,0.0625
+2026-Q1,production storage,0.11088,6,1,0.03125
+2026-Q1,green hydrogen costs,0.110343,19,2,0.0625
+2026-Q1,large scale hydrogen,0.106493,12,2,0.0625
+2026-Q1,refueling networks,0.104348,24,2,0.0625
+2026-Q1,production costs,0.102091,22,3,0.09375
+2026-Q1,major hydrogen,0.100815,12,2,0.0625
+2026-Q1,infrastructure rollout,0.100585,30,2,0.0625
+2026-Q1,federal hydrogen,0.099494,20,2,0.0625
+2026-Q1,humming hydrogen,0.097329,21,3,0.09375
+2026-Q1,gen hydrogen,0.094531,7,2,0.0625
+2026-Q1,gen hydrogen production,0.094531,7,2,0.0625
+2026-Q1,pem fuel cell technology,0.094371,14,2,0.0625
+2026-Q1,bipartisan infrastructure,0.093931,13,2,0.0625
+2026-Q1,bipartisan infrastructure law,0.093931,13,2,0.0625
+2026-Q1,infrastructure law,0.093931,13,2,0.0625
+2026-Q1,gas storage,0.092181,11,1,0.03125
+2026-Q1,civil aviation,0.09004,17,2,0.0625
+2026-Q1,green hydrogen facilities,0.089357,15,2,0.0625
+2026-Q1,fuel cell trucks,0.083763,14,2,0.0625
+2026-Q1,clean hydrogen production,0.083749,18,4,0.125
+2026-Q1,domestic hydrogen infrastructure,0.081229,12,2,0.0625
+2026-Q1,fast refueling,0.080789,13,3,0.09375
+2026-Q1,commercial aircraft,0.078924,1,1,0.03125
+2026-Q1,infrastructure readiness,0.078307,23,2,0.0625
+2026-Q1,duty transport,0.077631,16,3,0.09375
+2026-Q1,heavy duty transport,0.077631,16,3,0.09375
+2026-Q1,storage tanks,0.076553,14,3,0.09375
+2026-Q1,regional hydrogen,0.073621,15,2,0.0625
+2026-Q1,boost hydrogen,0.067761,7,1,0.03125
+2026-Q1,industrial clusters,0.067143,11,2,0.0625
+2026-Q1,pure hydrogen,0.064025,11,3,0.09375
+2026-Q1,storage solutions,0.063144,15,5,0.15625
+2026-Q1,steel mills refineries,0.062026,13,2,0.0625
+2026-Q1,ev hydrogen,0.061828,1,1,0.03125
+2026-Q1,broader hydrogen,0.061507,10,2,0.0625
+2026-Q1,industrial zones,0.059022,12,2,0.0625
+2026-Q1,refuel,0.058604,10,2,0.0625
+2026-Q1,turbine,0.057508,11,2,0.0625
+2026-Q1,mapping hydrogen,0.057157,19,1,0.03125
+2026-Q1,fuel cell powered,0.056316,10,2,0.0625
+2026-Q1,traditional hydrogen,0.054788,17,2,0.0625
+2026-Q1,traditional hydrogen production,0.054788,17,2,0.0625
+2026-Q1,national hydrogen,0.054518,21,2,0.0625
+2026-Q2,storage,1.191805,596,22,0.88
+2026-Q2,fuel cell,1.179429,462,15,0.6
+2026-Q2,production,0.967845,473,23,0.92
+2026-Q2,industrial,0.907818,469,16,0.64
+2026-Q2,green hydrogen,0.877233,368,17,0.68
+2026-Q2,fuel cells,0.807846,285,13,0.52
+2026-Q2,hydrogen infrastructure,0.729703,265,18,0.72
+2026-Q2,aviation,0.674829,179,4,0.16
+2026-Q2,hydrogen storage,0.629643,202,13,0.52
+2026-Q2,refueling,0.618031,229,15,0.6
+2026-Q2,hydrogen production,0.57716,241,18,0.72
+2026-Q2,ammonia,0.545392,90,3,0.12
+2026-Q2,aircraft,0.486561,98,3,0.12
+2026-Q2,hydrogen fuel,0.474896,350,15,0.6
+2026-Q2,liquid,0.455969,119,7,0.28
+2026-Q2,liquid hydrogen,0.451438,102,5,0.2
+2026-Q2,electrolyzer,0.441268,134,11,0.44
+2026-Q2,clean hydrogen,0.431408,152,12,0.48
+2026-Q2,hydrogen combustion,0.4174,65,4,0.16
+2026-Q2,hydrogen fuel cells,0.395671,115,9,0.36
+2026-Q2,pipeline,0.374122,79,5,0.2
+2026-Q2,electrolysis,0.355974,137,12,0.48
+2026-Q2,transport,0.336514,82,7,0.28
+2026-Q2,green hydrogen production,0.332125,108,12,0.48
+2026-Q2,hydrogen energy,0.312557,58,5,0.2
+2026-Q2,hydrogen electric,0.295692,47,2,0.08
+2026-Q2,storage solutions,0.286052,81,10,0.4
+2026-Q2,fuel cell technology,0.278639,55,6,0.24
+2026-Q2,shipping,0.269764,88,6,0.24
+2026-Q2,refueling stations,0.251475,80,8,0.32
+2026-Q2,hydrogen industry,0.234927,102,2,0.08
+2026-Q2,energy storage,0.23156,41,4,0.16
+2026-Q2,hydrogen production methods,0.22077,46,5,0.2
+2026-Q2,production methods,0.22077,46,5,0.2
+2026-Q2,hydrogen aviation,0.205204,40,3,0.12
+2026-Q2,fuel cell electric,0.189463,39,3,0.12
+2026-Q2,fuel cell systems,0.184895,48,5,0.2
+2026-Q2,industrial sites,0.18074,48,4,0.16
+2026-Q2,hydrogen refueling,0.178636,42,6,0.24
+2026-Q2,fuel cell stacks,0.178544,54,4,0.16
+2026-Q2,hydrogen supply,0.178062,28,4,0.16
+2026-Q2,hydrogen powered,0.167286,43,6,0.24
+2026-Q2,large scale hydrogen,0.159425,11,1,0.04
+2026-Q2,scale hydrogen,0.159425,11,1,0.04
+2026-Q2,hydrogen economy,0.156064,141,3,0.12
+2026-Q2,liquid hydrogen storage,0.15413,28,3,0.12
+2026-Q2,hydrogen systems,0.150502,21,2,0.08
+2026-Q2,steel,0.145859,39,6,0.24
+2026-Q2,chapter hydrogen,0.142967,72,1,0.04
+2026-Q2,production hubs,0.142795,17,2,0.08
+2026-Q2,clear hydrogen,0.140559,11,1,0.04
+2026-Q2,production storage,0.140055,25,2,0.08
+2026-Q2,production ramps,0.138768,25,3,0.12
+2026-Q2,industrial decarbonization,0.136592,61,5,0.2
+2026-Q2,industrial processes,0.136555,33,3,0.12
+2026-Q2,global hydrogen,0.135747,19,2,0.08
+2026-Q2,global hydrogen trade,0.135747,19,2,0.08
+2026-Q2,hydrogen trade,0.135747,19,2,0.08
+2026-Q2,cutting edge fuel cell,0.133331,26,2,0.08
+2026-Q2,edge fuel cell,0.133331,26,2,0.08
+2026-Q2,fuel cell research,0.13324,37,3,0.12
+2026-Q2,industry hydrogen,0.130282,48,2,0.08
+2026-Q2,hydrogen sector,0.130063,126,2,0.08
+2026-Q2,robust hydrogen,0.130007,30,3,0.12
+2026-Q2,robust hydrogen infrastructure,0.130007,30,3,0.12
+2026-Q2,battery electric fuel cell,0.129866,8,1,0.04
+2026-Q2,electric fuel cell,0.129866,8,1,0.04
+2026-Q2,hydrogen offtake,0.129258,28,3,0.12
+2026-Q2,hydrogen hubs,0.128531,16,2,0.08
+2026-Q2,clean hydrogen offtake,0.126401,26,2,0.08
+2026-Q2,industrial parks,0.125826,16,2,0.08
+2026-Q2,pilot production,0.121513,20,2,0.08
+2026-Q2,carbon hydrogen,0.119158,21,3,0.12
+2026-Q2,low carbon hydrogen,0.119158,21,3,0.12
+2026-Q2,electric fuel cell electric,0.117103,8,1,0.04
+2026-Q2,power generation,0.116395,15,2,0.08
+2026-Q2,oxide fuel cell,0.115011,18,2,0.08
+2026-Q2,solid oxide fuel cell,0.115011,18,2,0.08
+2026-Q2,rapid refueling,0.111842,18,2,0.08
+2026-Q2,industrial gas,0.110104,24,2,0.08
+2026-Q2,clean hydrogen infrastructure,0.107979,9,1,0.04
+2026-Q2,hydrogen aircraft,0.105516,17,2,0.08
+2026-Q2,high pressure storage,0.103493,18,3,0.12
+2026-Q2,pressure storage,0.103493,18,3,0.12
+2026-Q2,blue hydrogen,0.102602,20,4,0.16
+2026-Q2,storing hydrogen,0.101351,12,2,0.08
+2026-Q2,renewable hydrogen,0.10071,19,3,0.12
+2026-Q2,produce hydrogen,0.098522,33,2,0.08
+2026-Q2,truck,0.096614,17,3,0.12
+2026-Q2,clean hydrogen offtake agreements,0.096541,19,2,0.08
+2026-Q2,turbine,0.095458,16,3,0.12
+2026-Q2,producing green hydrogen,0.094921,27,3,0.12
+2026-Q2,refueling network,0.09211,10,2,0.08
+2026-Q2,industrial users,0.090458,15,2,0.08
+2026-Q2,budding hydrogen,0.089817,14,2,0.08
+2026-Q2,sustainable aviation,0.089623,14,2,0.08
+2026-Q2,industrial infrastructure,0.088967,7,1,0.04
+2026-Q2,storage medium,0.087798,12,2,0.08
+2026-Q2,refuel,0.086422,15,3,0.12
+2026-Q2,ammonia production,0.085989,11,2,0.08
+2026-Q2,gas infrastructure,0.085578,12,3,0.12
+2026-Q2,steel mills,0.084413,15,2,0.08
+2026-Q2,scale storage,0.083058,15,2,0.08
+2026-Q2,pem fuel cell,0.080574,13,2,0.08
+2026-Q2,gaseous hydrogen,0.075336,15,2,0.08
+2026-Q2,infrastructure developers,0.072632,13,2,0.08
+2026-Q2,refueling infrastructure,0.072502,17,2,0.08
+2026-Q2,generation hydrogen,0.070885,3,2,0.08
+2026-Q2,high pressure hydrogen,0.069444,15,5,0.2
+2026-Q2,pressure hydrogen,0.069444,15,5,0.2
+2026-Q2,stash hydrogen,0.068534,5,1,0.04
+2026-Q2,gas hydrogen,0.067415,6,2,0.08
+2026-Q2,exporting hydrogen,0.067414,12,2,0.08
+2026-Q2,high pressure storage solutions,0.063849,9,2,0.08
+2026-Q2,pressure storage solutions,0.063849,9,2,0.08
+2026-Q2,reliable hydrogen,0.060341,17,2,0.08
+2026-Q2,storage sites,0.059534,10,2,0.08
+2026-Q2,duty transport,0.058231,12,2,0.08
+2026-Q2,heavy duty transport,0.058231,12,2,0.08
+2026-Q2,refueling protocols,0.057506,11,2,0.08
