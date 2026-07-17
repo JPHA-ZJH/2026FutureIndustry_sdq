@@ -1,0 +1,22 @@
+{
+  "patent_rows": 778,
+  "firm_year_rows": 272,
+  "firm_rows": 272,
+  "years": [
+    2021
+  ],
+  "year_count": 1,
+  "single_year_test": true,
+  "unique_applicants": 271,
+  "unmapped_city_rows": 0,
+  "unmapped_cities": [],
+  "ambiguous_type_rows": 35,
+  "ambiguous_type_share": 0.04498714652956298,
+  "citation_non_null": 43,
+  "citation_coverage": 0.055269922879177376,
+  "citation_metrics_allowed": false,
+  "potential_duplicate_rows_basic_key": 24,
+  "all_region_values": [
+    "中国"
+  ]
+}
