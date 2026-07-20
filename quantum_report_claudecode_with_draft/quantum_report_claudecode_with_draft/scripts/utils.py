@@ -101,16 +101,81 @@ def add_applicant_classification(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_province(df: pd.DataFrame, mapping: pd.DataFrame) -> pd.DataFrame:
+    """Map city names to provinces with robust handling of "市" suffix variants.
+
+    The mapping file uses city names WITH "市" (e.g. "上海市", "合肥市"),
+    but patent data may have city names WITHOUT "市" (e.g. "上海", "合肥").
+    This function normalises both sides by stripping the trailing "市" before merging,
+    so "上海"/"上海市" → "上海" → "上海市", "合肥"/"合肥市" → "合肥" → "安徽省".
+    """
     out = df.copy()
     out["第一申请人城市"] = out["第一申请人城市"].map(clean_text)
-    mapping = mapping.drop_duplicates("第一申请人城市")
-    out = out.merge(mapping, on="第一申请人城市", how="left")
-    # Future files may directly store province-like values in the city field.
-    province_like = out["第一申请人城市"].str.endswith(("省", "市", "自治区", "特别行政区"), na=False)
-    direct_values = out["第一申请人城市"].where(province_like)
-    municipalities = {"上海市", "北京市", "天津市", "重庆市"}
-    out.loc[out["省级地区"].isna() & direct_values.isin(municipalities), "省级地区"] = direct_values
+
+    # ----- normalised key: strip trailing "市" from both sides -----
+    mapping_norm = mapping.drop_duplicates("第一申请人城市").copy()
+    mapping_norm["_city_key"] = mapping_norm["第一申请人城市"].str.replace(r"市$", "", regex=True)
+    # In case different cities normalise to the same key (e.g. "吉林市" → "吉林"),
+    # keep the first mapping row (城市→省级 是一对一的).
+    mapping_norm = mapping_norm.drop_duplicates("_city_key")
+
+    out["_city_key"] = out["第一申请人城市"].str.replace(r"市$", "", regex=True)
+    out = out.merge(mapping_norm[["_city_key", "省级地区"]], on="_city_key", how="left")
+
+    # ----- fallback 1: municipalities written without "市" -----
+    # e.g. "上海" → "上海市", "北京" → "北京市"
+    MUNICIPALITIES = {"上海": "上海市", "北京": "北京市", "天津": "天津市", "重庆": "重庆市"}
+    still_na = out["省级地区"].isna()
+    out.loc[still_na, "省级地区"] = (
+        out.loc[still_na, "_city_key"].map(MUNICIPALITIES)
+    )
+
+    # ----- fallback 2: abbreviated prefecture names → full prefecture -----
+    # e.g. "凉山" → "凉山彝族自治州" → "四川省"
+    PREFECTURE_ABBREV = {
+        "凉山": "凉山彝族自治州", "阿坝": "阿坝藏族羌族自治州",
+        "甘孜": "甘孜藏族自治州", "延边": "延边朝鲜族自治州",
+        "恩施": "恩施土家族苗族自治州", "湘西": "湘西土家族苗族自治州",
+        "黔西南": "黔西南布依族苗族自治州", "黔东南": "黔东南苗族侗族自治州",
+        "黔南": "黔南布依族苗族自治州", "楚雄": "楚雄彝族自治州",
+        "红河": "红河哈尼族彝族自治州", "文山": "文山壮族苗族自治州",
+        "西双版纳": "西双版纳傣族自治州", "大理": "大理白族自治州",
+        "德宏": "德宏傣族景颇族自治州", "临夏": "临夏回族自治州",
+        "甘南": "甘南藏族自治州", "海北": "海北藏族自治州",
+        "黄南": "黄南藏族自治州", "海南": "海南藏族自治州",
+        "果洛": "果洛藏族自治州", "玉树": "玉树藏族自治州",
+        "海西": "海西蒙古族藏族自治州", "昌吉": "昌吉回族自治州",
+        "博尔塔拉": "博尔塔拉蒙古自治州", "巴音郭楞": "巴音郭楞蒙古自治州",
+        "克孜勒苏": "克孜勒苏柯尔克孜自治州", "伊犁": "伊犁哈萨克自治州",
+        "澳门": "澳门特别行政区",
+    }
+    still_na = out["省级地区"].isna()
+    full_names = out.loc[still_na, "_city_key"].map(PREFECTURE_ABBREV)
+    # Map these full names to provinces via the normalised mapping
+    full_to_prov = dict(zip(
+        mapping_norm["_city_key"].str.replace(r"市$", "", regex=True),
+        mapping_norm["省级地区"]
+    ))
+    out.loc[still_na, "省级地区"] = full_names.map(full_to_prov)
+
+    # ----- fallback 3: province names without "省" suffix -----
+    province_pattern = out["第一申请人城市"].str.endswith(
+        ("省", "自治区", "特别行政区"), na=False
+    )
+    still_na = out["省级地区"].isna() & province_pattern
+    out.loc[still_na, "省级地区"] = out.loc[still_na, "第一申请人城市"]
+
+    # ----- fallback 4: try exact original merge for anything still unmatched -----
+    still_na = out["省级地区"].isna()
+    if still_na.any():
+        orig_map = mapping_norm[["第一申请人城市", "省级地区"]].rename(
+            columns={"第一申请人城市": "_orig_city"}
+        )
+        unmatched = out.loc[still_na, ["第一申请人城市"]].reset_index()
+        matched = unmatched.merge(orig_map, left_on="第一申请人城市", right_on="_orig_city", how="left")
+        out.loc[still_na, "省级地区"] = matched["省级地区"].values
+
     out["省级地区"] = out["省级地区"].fillna("待映射")
+    out = out.drop(columns=["_city_key"], errors="ignore")
     return out
 
 

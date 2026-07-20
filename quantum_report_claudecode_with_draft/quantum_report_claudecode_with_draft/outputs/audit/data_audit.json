@@ -1,22 +1,47 @@
 {
-  "patent_rows": 778,
-  "firm_year_rows": 272,
-  "firm_rows": 272,
+  "patent_rows": 7398,
+  "firm_year_rows": 2529,
+  "firm_rows": 1956,
   "years": [
-    2021
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
   ],
-  "year_count": 1,
-  "single_year_test": true,
-  "unique_applicants": 271,
-  "unmapped_city_rows": 0,
-  "unmapped_cities": [],
-  "ambiguous_type_rows": 35,
-  "ambiguous_type_share": 0.04498714652956298,
-  "citation_non_null": 43,
-  "citation_coverage": 0.055269922879177376,
+  "year_count": 5,
+  "single_year_test": false,
+  "unique_applicants": 1615,
+  "unmapped_city_rows": 280,
+  "unmapped_cities": [
+    ""
+  ],
+  "ambiguous_type_rows": 502,
+  "ambiguous_type_share": 0.06785617734522845,
+  "citation_non_null": 139,
+  "citation_coverage": 0.018788861854555285,
   "citation_metrics_allowed": false,
-  "potential_duplicate_rows_basic_key": 24,
+  "potential_duplicate_rows_basic_key": 383,
   "all_region_values": [
-    "中国"
+    "中国",
+    "丹麦",
+    "以色列",
+    "加拿大",
+    "开曼群岛",
+    "德国",
+    "新加坡",
+    "日本",
+    "比利时",
+    "法国",
+    "波兰",
+    "澳大利亚",
+    "爱尔兰",
+    "瑞典",
+    "瑞士",
+    "美国",
+    "芬兰",
+    "英国",
+    "荷兰",
+    "韩国"
   ]
 }

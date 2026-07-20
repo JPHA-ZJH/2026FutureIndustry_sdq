@@ -1,0 +1,37 @@
+{
+  "raw_patent_rows": 7398,
+  "quantum_patent_rows_before_exact_dedup": 7398,
+  "exact_duplicate_rows_flagged": 0,
+  "clean_patent_rows": 7398,
+  "near_duplicate_rows_basic_key": 383,
+  "first_applicant_reextracted_rows": 0,
+  "type_review_rows": 0,
+  "type_review_share": 0.0,
+  "unmapped_domestic_city_rows": 0,
+  "missing_city_rows": 0,
+  "years": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "technology_categories": [
+    "量子传感",
+    "量子基础概念",
+    "量子计算",
+    "量子计算硬件",
+    "量子通信与安全"
+  ],
+  "domestic_patent_rows": 7118,
+  "foreign_patent_rows": 280,
+  "citation_coverage": 0.018788861854555285,
+  "raw_firm_year_rows": 2529,
+  "raw_firm_rows": 1956,
+  "rebuilt_firm_year_rows": 2500,
+  "rebuilt_firm_rows": 1630,
+  "raw_firm_year_patent_sum": 7398,
+  "raw_firm_patent_sum": 7398,
+  "rebuilt_firm_year_patent_sum": 7398,
+  "rebuilt_firm_patent_sum": 7398
+}

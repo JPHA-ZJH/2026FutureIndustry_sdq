@@ -213,6 +213,45 @@ def enterprise_concentration(p: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def shanghai_yearly_tech(p: pd.DataFrame, field: str) -> pd.DataFrame:
+    """Shanghai yearly breakdown by a categorical field (main_category or chain_position)."""
+    sh = p[p["省级地区"] == SHANGHAI].copy()
+    years = sorted(sh["year"].dropna().astype(int).unique())
+    rows = []
+    for year in years:
+        gy = sh[sh["year"] == year]
+        for cat in gy[field].dropna().unique():
+            gcat = gy[gy[field] == cat]
+            rows.append({
+                "年份": year,
+                "类别": cat,
+                "专利数": len(gcat),
+                "企业专利数": int((gcat["主体大类"] == "企业").sum()),
+                "严格核心专利数": int(gcat["是否严格核心"].sum()),
+            })
+    return pd.DataFrame(rows)
+
+
+def shanghai_yearly_enterprises(p: pd.DataFrame) -> pd.DataFrame:
+    """Top Shanghai enterprises' yearly patent counts."""
+    sh = p[(p["省级地区"] == SHANGHAI) & (p["主体大类"] == "企业")].copy()
+    # Get top 8 enterprises by total patents
+    top_firms = sh.groupby("第一申请人").size().nlargest(8).index.tolist()
+    years = sorted(sh["year"].dropna().astype(int).unique())
+    rows = []
+    for year in years:
+        gy = sh[sh["year"] == year]
+        for firm in top_firms:
+            gf = gy[gy["第一申请人"] == firm]
+            if len(gf) > 0:
+                rows.append({
+                    "年份": year,
+                    "企业": firm,
+                    "专利数": len(gf),
+                })
+    return pd.DataFrame(rows)
+
+
 def entrant_persistence(p: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     years = sorted(p["year"].dropna().astype(int).unique())
     if len(years) < 2:
@@ -247,6 +286,9 @@ def save_tables(p: pd.DataFrame, fy: pd.DataFrame, f: pd.DataFrame, audit: dict)
     other_ent = other_top_enterprises(p, TOP_OTHER_ENTERPRISE_N)
     concentration = enterprise_concentration(p)
     firm_panel, entrants = entrant_persistence(p)
+    sh_yearly_cat = shanghai_yearly_tech(p, "main_category")
+    sh_yearly_chain = shanghai_yearly_tech(p, "chain_position")
+    sh_yearly_ent = shanghai_yearly_enterprises(p)
 
     tables = {
         "01_全国地区概览.csv": region,
@@ -263,6 +305,9 @@ def save_tables(p: pd.DataFrame, fy: pd.DataFrame, f: pd.DataFrame, audit: dict)
         "12_企业集中度比较.csv": concentration,
         "13_企业持续性明细.csv": firm_panel,
         "14_新进入企业年度统计.csv": entrants,
+        "15_上海年度技术方向.csv": sh_yearly_cat,
+        "16_上海年度产业链环节.csv": sh_yearly_chain,
+        "17_上海头部企业年度趋势.csv": sh_yearly_ent,
     }
     for filename, df in tables.items():
         df.to_csv(TABLE_DIR / filename, index=False, encoding="utf-8-sig")
@@ -273,7 +318,7 @@ def save_tables(p: pd.DataFrame, fy: pd.DataFrame, f: pd.DataFrame, audit: dict)
         {"检查项": "企业年度表quantum_patent_count合计", "数值": int(pd.to_numeric(fy["quantum_patent_count"], errors="coerce").sum())},
         {"检查项": "企业汇总表quantum_patent_count合计", "数值": int(pd.to_numeric(f["quantum_patent_count"], errors="coerce").sum())},
     ])
-    check.to_csv(TABLE_DIR / "15_三表一致性检查.csv", index=False, encoding="utf-8-sig")
+    check.to_csv(TABLE_DIR / "18_三表一致性检查.csv", index=False, encoding="utf-8-sig")
 
     return tables
 
@@ -397,6 +442,130 @@ def make_figures(p: pd.DataFrame, tables: dict):
         fig.tight_layout()
         fig.savefig(FIGURE_DIR / "08_重点省市年度趋势.png", bbox_inches="tight")
         plt.close(fig)
+
+        # ---- NEW TIME-SERIES FIGURES ----
+
+        # 09: Shanghai multi-indicator yearly trend (patents, entities, enterprises, enterprise patents)
+        sh_trend = trend[trend["省级地区"] == SHANGHAI].sort_values("year")
+        if not sh_trend.empty:
+            fig, ax1 = plt.subplots(figsize=(10, 5.8))
+            ax1.bar(sh_trend["year"] - 0.15, sh_trend["量子相关专利数"], 0.3,
+                    label="专利总数", color=PALETTE[0])
+            ax1.bar(sh_trend["year"] + 0.15, sh_trend["企业专利数"], 0.3,
+                    label="企业专利数", color=PALETTE[3])
+            ax2 = ax1.twinx()
+            ax2.plot(sh_trend["year"], sh_trend["创新主体数"], marker="s", linewidth=2,
+                     label="创新主体数", color=PALETTE[1])
+            ax2.plot(sh_trend["year"], sh_trend["明确企业数"], marker="D", linewidth=2,
+                     label="明确企业数", color=PALETTE[2])
+            ax1.set_title("上海量子信息创新年度变化")
+            ax1.set_xlabel("年份")
+            ax1.set_ylabel("专利数")
+            ax2.set_ylabel("主体/企业数")
+            ax1.set_xticks(sh_trend["year"])
+            lines1, labels1 = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax1.legend(lines1 + lines2, labels1 + labels2, frameon=False, ncol=2,
+                       loc="upper center", bbox_to_anchor=(0.5, -0.12))
+            ax1.spines[["top", "right"]].set_visible(False)
+            ax1.grid(axis="y", linestyle="--", alpha=0.2)
+            fig.tight_layout()
+            fig.savefig(FIGURE_DIR / "09_上海多维年度趋势.png", bbox_inches="tight")
+            plt.close(fig)
+
+        # 10: Yearly enterprise dynamics for all 6 provinces (subplots)
+        trend_mapped = trend[trend["省级地区"].isin(COMPARE_REGIONS)]
+        fig, axes = plt.subplots(2, 3, figsize=(14, 8))
+        for i, region in enumerate(COMPARE_REGIONS):
+            ax = axes[i // 3][i % 3]
+            t = trend_mapped[trend_mapped["省级地区"] == region].sort_values("year")
+            ax.bar(t["year"] - 0.2, t["量子相关专利数"], 0.35, label="专利总数", color=PALETTE[0])
+            ax.bar(t["year"] + 0.15, t["企业专利数"], 0.35, label="企业专利", color=PALETTE[3])
+            ax.set_title(region, fontsize=12)
+            ax.set_xticks(t["year"])
+            ax.tick_params(labelsize=8)
+            if i >= 3:
+                ax.set_xlabel("年份", fontsize=9)
+            if i % 3 == 0:
+                ax.set_ylabel("专利数", fontsize=9)
+            ax.grid(axis="y", linestyle="--", alpha=0.2)
+            ax.spines[["top", "right"]].set_visible(False)
+        handles = [plt.Rectangle((0, 0), 1, 1, color=PALETTE[0]),
+                    plt.Rectangle((0, 0), 1, 1, color=PALETTE[3])]
+        fig.legend(handles, ["专利总数", "企业专利"], frameon=False, ncol=2,
+                    loc="upper center", bbox_to_anchor=(0.5, -0.02), fontsize=10)
+        fig.suptitle("重点省市量子信息专利年度变化（分省）", y=1.01, fontsize=14)
+        fig.tight_layout()
+        fig.savefig(FIGURE_DIR / "10_重点省市分省年度趋势.png", bbox_inches="tight")
+        plt.close(fig)
+
+        # 11: Shanghai new entrants (from table 14)
+        entrants_df = tables["14_新进入企业年度统计.csv"]
+        sh_entrants = entrants_df[entrants_df["省级地区"] == SHANGHAI].sort_values("year")
+        if not sh_entrants.empty and len(sh_entrants) >= 2:
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.bar(sh_entrants["year"], sh_entrants["活跃企业数"], color=PALETTE[0], label="活跃企业数")
+            ax.bar(sh_entrants["year"], sh_entrants["新进入企业数"], color=PALETTE[1], label="新进入企业数")
+            ax.set_title("上海量子信息企业进入与活跃度变化")
+            ax.set_xlabel("年份")
+            ax.set_ylabel("企业数")
+            ax.set_xticks(sh_entrants["year"])
+            ax.legend(frameon=False, ncol=2)
+            ax.spines[["top", "right"]].set_visible(False)
+            ax.grid(axis="y", linestyle="--", alpha=0.2)
+            fig.tight_layout()
+            fig.savefig(FIGURE_DIR / "11_上海企业进入动态.png", bbox_inches="tight")
+            plt.close(fig)
+
+        # 12: Shanghai top enterprise patent accumulation over years
+        sh_ent_yearly = tables["17_上海头部企业年度趋势.csv"]
+        if not sh_ent_yearly.empty:
+            top5 = sh_ent_yearly.groupby("企业")["专利数"].sum().nlargest(5).index.tolist()
+            fig, ax = plt.subplots(figsize=(10, 5.5))
+            for i, firm in enumerate(top5):
+                tf = sh_ent_yearly[sh_ent_yearly["企业"] == firm].sort_values("年份")
+                ax.plot(tf["年份"], tf["专利数"], marker="o", linewidth=2,
+                        label=firm[:12], color=PALETTE[i])
+            ax.set_title("上海头部量子企业专利年度变化")
+            ax.set_xlabel("年份")
+            ax.set_ylabel("专利数")
+            ax.set_xticks(sorted(sh_ent_yearly["年份"].unique()))
+            ax.legend(frameon=False, ncol=2, fontsize=8,
+                      loc="upper center", bbox_to_anchor=(0.5, -0.15))
+            ax.spines[["top", "right"]].set_visible(False)
+            ax.grid(axis="y", linestyle="--", alpha=0.2)
+            fig.tight_layout()
+            fig.savefig(FIGURE_DIR / "12_上海头部企业年度趋势.png", bbox_inches="tight")
+            plt.close(fig)
+
+        # 13: Shanghai tech direction changes over years (grouped bar)
+        sh_yearly_cat = tables["15_上海年度技术方向.csv"]
+        if not sh_yearly_cat.empty:
+            # Focus on top 4 categories
+            top_cats = sh_yearly_cat.groupby("类别")["专利数"].sum().nlargest(4).index.tolist()
+            cat_data = sh_yearly_cat[sh_yearly_cat["类别"].isin(top_cats)]
+            years_list = sorted(cat_data["年份"].unique())
+            x_pos = np.arange(len(years_list))
+            n_cats = len(top_cats)
+            bar_width = 0.8 / n_cats
+            fig, ax = plt.subplots(figsize=(10, 5.8))
+            for i, cat in enumerate(top_cats):
+                vals = []
+                for y in years_list:
+                    row = cat_data[(cat_data["年份"] == y) & (cat_data["类别"] == cat)]
+                    vals.append(row["专利数"].values[0] if len(row) > 0 else 0)
+                offset = (i - (n_cats - 1) / 2) * bar_width
+                ax.bar(x_pos + offset, vals, bar_width * 0.9, label=cat, color=PALETTE[i])
+            ax.set_title("上海量子信息技术方向年度变化")
+            ax.set_xlabel("年份")
+            ax.set_ylabel("专利数")
+            ax.set_xticks(x_pos, years_list)
+            ax.legend(frameon=False, ncol=2, fontsize=9)
+            ax.spines[["top", "right"]].set_visible(False)
+            ax.grid(axis="y", linestyle="--", alpha=0.2)
+            fig.tight_layout()
+            fig.savefig(FIGURE_DIR / "13_上海技术方向年度变化.png", bbox_inches="tight")
+            plt.close(fig)
 
 
 def write_audit_files(audit: dict, p: pd.DataFrame):
